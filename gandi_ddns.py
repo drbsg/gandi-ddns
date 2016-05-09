@@ -45,16 +45,16 @@ class GandiProxy:
         return ipaddress.ip_address(records[0]['value'])
 
     def _update_record(self, record):
-        new_zone_version = self.api.zone.version.new(self.key, self.zone_id())
-        self.api.zone.record.delete(self.key, self.zone_id(), new_zone_version, {'type': 'A', 'name': record['name']})
-        self.api.zone.record.add(self.key, self.zone_id(), new_zone_version, record)
+        new_zone_version = self.api.domain.zone.version.new(self.key, self.zone_id())
+        self.api.domain.zone.record.delete(self.key, self.zone_id(), new_zone_version, {'type': 'A', 'name': record['name']})
+        self.api.domain.zone.record.add(self.key, self.zone_id(), new_zone_version, record)
         self.api.domain.zone.version.set(self.key, self.zone_id(), new_zone_version)
 
     def update_record(self, hostname, ipv4, ttl):
         new_record = {
             'type': 'A',
             'name': hostname,
-            'value': str(public_ipv4),
+            'value': str(ipv4),
             'ttl': ttl}
         self._update_record(new_record)
 
@@ -63,6 +63,7 @@ def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('--configuration', '-c', type=str, default='gandi_ddns.cfg', help='Configuration filename.')
     parser.add_argument('--verbose', '-v', action='store_true', help='Turn on debug output.')
+    parser.add_argument('--force', '-f', action='store_true', help='Force update of the zone record.')
     return parser.parse_args(args=argv)
 
 
@@ -89,7 +90,7 @@ def main(argv):
         current_ipv4 = proxy.current_ipv4_address(hostname)
         if args.verbose:
             print('Configured IPv4 address: {}'.format(current_ipv4))
-        if current_ipv4 != public_ipv4:
+        if current_ipv4 != public_ipv4 or args.force:
             proxy.update_record(hostname, public_ipv4, ttl)
             if args.verbose:
                 print('Updated')
